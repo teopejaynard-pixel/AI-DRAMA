@@ -1,0 +1,120 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ---------------------------------------------------------
+    // GLOBAL HELPERS
+    // ---------------------------------------------------------
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isAdmin() { return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    // ---------------------------------------------------------
+    // ENTITY VALIDATION HELPERS
+    // ---------------------------------------------------------
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role']) &&
+             data.keys().hasOnly(['uid', 'displayName', 'email', 'photoURL', 'role', 'isPremium', 'subscriptionId', 'createdAt', 'updatedAt']) &&
+             data.uid == request.auth.uid &&
+             data.email is string &&
+             data.role in ['user', 'admin'];
+    }
+
+    function isValidDrama(data) {
+      return data.keys().hasAll(['title', 'type', 'genres', 'coverImage']) &&
+             data.title is string && data.title.size() <= 200 &&
+             data.type in ['realistic', 'anime', 'cartoon'];
+    }
+
+    function isValidEpisode(data) {
+      return data.keys().hasAll(['dramaId', 'seasonId', 'number', 'videoUrl']) &&
+             data.number is int && data.videoUrl is string;
+    }
+
+    function isValidReview(data) {
+      return data.keys().hasAll(['userId', 'dramaId', 'rating']) &&
+             data.userId == request.auth.uid &&
+             data.rating >= 1 && data.rating <= 5;
+    }
+
+    // ---------------------------------------------------------
+    // DEFAULT DENY
+    // ---------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ---------------------------------------------------------
+    // COLLECTIONS
+    // ---------------------------------------------------------
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && isValidUser(incoming()) && incoming().role == 'user';
+      allow update: if isOwner(userId) && isValidUser(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'updatedAt']) ||
+        isAdmin()
+      );
+    }
+
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if false; // Only manageable via console
+    }
+
+    match /dramas/{dramaId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin() && isValidDrama(incoming());
+    }
+
+    match /dramas/{dramaId}/seasons/{seasonId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /dramas/{dramaId}/seasons/{seasonId}/episodes/{episodeId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin() && isValidEpisode(incoming());
+    }
+
+    match /watch_history/{historyId} {
+      allow read: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && existing().userId == request.auth.uid && incoming().userId == request.auth.uid;
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+
+    match /watchlists/{watchlistId} {
+      allow read: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+
+    match /subscriptions/{subId} {
+      allow get: if isOwner(existing().userId) || isAdmin();
+      allow list: if isOwner(resource.data.userId) || isAdmin();
+      allow create, update: if isAdmin(); // Server-side only via admin sdk (hypothetically) or admin dashboard
+    }
+
+    match /payments/{paymentId} {
+      allow get: if isOwner(existing().userId) || isAdmin();
+      allow list: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow create: if isAdmin(); // Only server-side
+    }
+
+    match /ai_generation_jobs/{jobId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /dramas/{dramaId}/reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isVerified() && isValidReview(incoming());
+      allow update: if isVerified() && isOwner(existing().userId) && isValidReview(incoming());
+      allow delete: if isVerified() && (isOwner(existing().userId) || isAdmin());
+    }
+  }
+}

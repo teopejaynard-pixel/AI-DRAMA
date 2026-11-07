@@ -1,0 +1,171 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information and settings.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "format": "email" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "isPremium": { "type": "boolean" },
+        "subscriptionId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Drama": {
+      "title": "Drama",
+      "description": "Metadata for a drama series (Anime, Cartoon, or Realistic AI).",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "type": { "type": "string", "enum": ["realistic", "anime", "cartoon"] },
+        "genres": { "type": "array", "items": { "type": "string" } },
+        "coverImage": { "type": "string" },
+        "backdropImage": { "type": "string" },
+        "releaseDate": { "type": "string", "format": "date" },
+        "rating": { "type": "number" },
+        "ageRating": { "type": "string" },
+        "isFeatured": { "type": "boolean" },
+        "isPremium": { "type": "boolean" },
+        "status": { "type": "string", "enum": ["ongoing", "completed", "upcoming"] },
+        "cast": { "type": "array", "items": { "type": "string" } },
+        "viewCount": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "type", "genres", "coverImage"]
+    },
+    "Season": {
+      "title": "Season",
+      "description": "A season within a drama series.",
+      "type": "object",
+      "properties": {
+        "dramaId": { "type": "string" },
+        "number": { "type": "integer" },
+        "title": { "type": "string" },
+        "episodeCount": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["dramaId", "number"]
+    },
+    "Episode": {
+      "title": "Episode",
+      "description": "An individual episode of a drama.",
+      "type": "object",
+      "properties": {
+        "dramaId": { "type": "string" },
+        "seasonId": { "type": "string" },
+        "number": { "type": "integer" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "videoUrl": { "type": "string" },
+        "thumbnailUrl": { "type": "string" },
+        "duration": { "type": "integer" },
+        "isFree": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["dramaId", "seasonId", "number", "videoUrl"]
+    },
+    "WatchHistory": {
+      "title": "WatchHistory",
+      "description": "Tracking user progress for episodes.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "dramaId": { "type": "string" },
+        "episodeId": { "type": "string" },
+        "progress": { "type": "number" },
+        "duration": { "type": "number" },
+        "lastWatched": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "dramaId", "episodeId", "progress"]
+    },
+    "Watchlist": {
+      "title": "Watchlist",
+      "description": "Dramas saved by the user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "dramaId": { "type": "string" },
+        "addedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "dramaId"]
+    },
+    "Subscription": {
+      "title": "Subscription",
+      "description": "User subscription details.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "plan": { "type": "string", "enum": ["free", "monthly", "yearly"] },
+        "status": { "type": "string", "enum": ["active", "cancelled", "expired"] },
+        "startDate": { "type": "string", "format": "date-time" },
+        "endDate": { "type": "string", "format": "date-time" },
+        "autoRenew": { "type": "boolean" }
+      },
+      "required": ["userId", "plan", "status"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Payment transaction records.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "amount": { "type": "number" },
+        "currency": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "completed", "failed"] },
+        "plan": { "type": "string" },
+        "transactionId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "amount", "status", "plan"]
+    },
+    "AIGenerationJob": {
+      "title": "AIGenerationJob",
+      "description": "Tracking AI video generation tasks.",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["realistic", "anime", "cartoon"] },
+        "prompt": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "processing", "completed", "failed"] },
+        "progress": { "type": "integer" },
+        "videoUrl": { "type": "string" },
+        "error": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["type", "prompt", "status"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "User reviews and ratings for dramas.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "dramaId": { "type": "string" },
+        "rating": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "comment": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "dramaId", "rating"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "User", "description": "User profiles" },
+    "/dramas/{dramaId}": { "schema": "Drama", "description": "Drama series metadata" },
+    "/dramas/{dramaId}/seasons/{seasonId}": { "schema": "Season", "description": "Seasons for a drama" },
+    "/dramas/{dramaId}/seasons/{seasonId}/episodes/{episodeId}": { "schema": "Episode", "description": "Episodes for a season" },
+    "/watch_history/{historyId}": { "schema": "WatchHistory", "description": "User viewing progress" },
+    "/watchlists/{watchlistId}": { "schema": "Watchlist", "description": "User saved dramas" },
+    "/subscriptions/{subId}": { "schema": "Subscription", "description": "User subscription plans" },
+    "/payments/{paymentId}": { "schema": "Payment", "description": "Transaction records" },
+    "/ai_generation_jobs/{jobId}": { "schema": "AIGenerationJob", "description": "AI video gen queue" },
+    "/dramas/{dramaId}/reviews/{reviewId}": { "schema": "Review", "description": "User reviews" },
+    "/admins/{adminId}": { "schema": { "type": "object", "properties": { "uid": { "type": "string" } } }, "description": "Admin access list" }
+  }
+}
